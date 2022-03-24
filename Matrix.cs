@@ -2,14 +2,20 @@
 
 class Matrix
 {
-    private Particle[] particles = {
-        new Particle(Material.None, State.None, new Color(0, 0, 0, 255)),
-        new Particle(Material.Sand, State.Solid, new Color(255, 255, 0, 255)),
-        new Particle(Material.Stone, State.Solid, new Color(55, 55, 55, 255)),
-        new Particle(Material.Water, State.Liquid, new Color(55, 55, 222, 255))
+    private static Random random = new Random();
+
+    public Particle[] palette = {
+        new Particle(Material.None, State.None, new Color(0, 0, 0, 255), 0, 0),
+        new Particle(Material.Sand, State.Solid, new Color(255, 255, 0, 255), 0.9),
+        new Particle(Material.Stone, State.Solid, new Color(55, 55, 55, 255), 1, 0),
+        new Particle(Material.Water, State.Liquid, new Color(55, 55, 222, 255), 0.8)
     };
 
+    public int BrushIndex { get; private set; } = 1;
+
     private Particle[,] _matrix;
+
+    public int BrushSize { get; private set; } = 10;
 
     public Matrix(uint width, uint height)
     {
@@ -20,7 +26,7 @@ class Matrix
         {
             for (int y = 0; y < height; y++)
             {
-                _matrix[x, y] = particles[0];
+                _matrix[x, y] = palette[0];
             }
         }
     }
@@ -63,9 +69,31 @@ class Matrix
                 0,
                 _matrix.GetLength(1) - 1
                 );
-
+             
             // place sand
-            _matrix[mouseX, mouseY] = particles[3];
+            for (int x = -(BrushSize / 2); x < (BrushSize / 2); x++)
+            {
+                for (int y = -(BrushSize / 2); y < (BrushSize / 2); y++)
+                {
+                    if (mouseX + x < _matrix.GetLength(0) &&
+                        mouseX + x >= 0 &&
+                        mouseY + y < _matrix.GetLength(1) &&
+                        mouseY + y >= 0 &&
+                        _matrix[mouseX + x, mouseY + y].ZIndex < palette[BrushIndex].ZIndex)
+                        _matrix[mouseX + x, mouseY + y] = palette[BrushIndex];
+                }
+            }
+        }
+
+        if (Raylib.IsKeyPressed(KeyboardKey.KEY_UP))
+        {
+            if (BrushIndex > 0)
+                BrushIndex--;
+        }
+        else if (Raylib.IsKeyPressed(KeyboardKey.KEY_DOWN))
+        {
+            if (BrushIndex < palette.Length - 1)
+                BrushIndex++;
         }
 
         for (int x = 0; x < _matrix.GetLength(0); x++)
@@ -79,41 +107,76 @@ class Matrix
 
     private void Move(int x, int y, Particle particle)
     {
-        if (x + 1 < _matrix.GetLength(0) &&
-            x - 1 >= 0 &&
-            y + 1 < _matrix.GetLength(1) &&
-            y - 1 >= 0
-            )
+        int step = particle.TilePerFrame;
+
+        switch (particle.Material)
         {
-            switch (particle.Material)
-            {
-                default:
-                    break;
+            default:
+                break;
 
-                case Material.Sand:
-                    if (_matrix[x, y + 1].Type != State.Solid)
+            case Material.Sand:
+                if (y + step < _matrix.GetLength(1) - 1 &&
+                    _matrix[x, y + step].Type != State.Solid)
+                {                    
+                    _matrix[x, y + step] = particle;
+                    _matrix[x, y] = palette[0];
+                }
+                else
+                {
+                    if(random.NextDouble() > 0.5)
                     {
-                        _matrix[x, y + 1] = particle;
-                        _matrix[x, y] = particles[0];
+                        if (y + step < _matrix.GetLength(1) &&
+                            x - step >= 0 &&
+                            _matrix[x - step, y + step].Type != State.Solid)
+                        {
+                            _matrix[x - step, y + step] = particle;
+                            _matrix[x, y] = palette[0];
+                        }
                     }
-                    else if (_matrix[x - 1, y + 1].Type != State.Solid)
+                    else
                     {
-                        _matrix[x - 1, y + 1] = particle;
-                        _matrix[x, y] = particles[0];
+                        if (y + step < _matrix.GetLength(1) &&
+                            x + step < _matrix.GetLength(0) &&
+                            _matrix[x + step, y + step].Type != State.Solid)
+                        {
+                            _matrix[x + step, y + step] = particle;
+                            _matrix[x, y] = palette[0];
+                        }
                     }
-                    else if (_matrix[x + 1, y + 1].Type != State.Solid)
-                    {
-                        _matrix[x + 1, y + 1] = particle;
-                        _matrix[x, y] = particles[0];
-                    }
-                    break;
+                }
+                break;
 
-                case Material.Stone:
-                    break;
-
-                case Material.Water:
-                    break;
-            }
+            case Material.Water:
+                if (y + step < _matrix.GetLength(1) - 1 &&
+                    _matrix[x, y + step].Type != State.Solid)
+                {
+                    _matrix[x, y + step] = particle;
+                    _matrix[x, y] = palette[0];
+                }
+                else
+                {
+                    if (random.NextDouble() > 0.5)
+                    {
+                        if (y + step < _matrix.GetLength(1) &&
+                            x - step >= 0 &&
+                            _matrix[x - step, y + step].Type != State.Solid)
+                        {
+                            _matrix[x - step, y + step] = particle;
+                            _matrix[x, y] = palette[0];
+                        }
+                    }
+                    else
+                    {
+                        if (y + step < _matrix.GetLength(1) &&
+                            x + step < _matrix.GetLength(0) &&
+                            _matrix[x + step, y + step].Type != State.Solid)
+                        {
+                            _matrix[x + step, y + step] = particle;
+                            _matrix[x, y] = palette[0];
+                        }
+                    }
+                }
+                break;
         }
     }
 }

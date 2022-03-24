@@ -29,6 +29,8 @@ class Window
             matrix.Step();
             matrix.RenderMatrix();
 
+            Raylib.DrawText($"brush: {matrix.palette[matrix.BrushIndex].Material.ToString().ToLower()} | brush size: {matrix.BrushSize.ToString()}", 5, 5, 20, Color.WHITE);
+
             Raylib.EndDrawing();
         }
 
